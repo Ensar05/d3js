@@ -1,136 +1,122 @@
 "use client"
-import React, { useState, useEffect, useRef } from 'react';
-import Head from 'next/head';
+import React, {
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+
 import * as d3 from 'd3';
+
+import { createSVG } from './svgNodes';
 
 export default function Home() {
   const [isVisible, setIsVisible] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
+  const [isFunctionsDropdownOpen, setIsFunctionsDropdownOpen] = useState(false);
   const canvasRef = useRef(null);
-  const sv78gContainerRef = useRef(null);
+  const svgContainerRef = useRef(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    const gridSize = 20; // Größe des Karos
+    const gridSize = 20;
 
     const drawGrid = () => {
-      // Canvas Größe setzen
       canvas.width = canvas.offsetWidth;
       canvas.height = canvas.offsetHeight;
 
-      // Karomuster zeichnen
-      ctx.clearRect(0, 0, canvas.width, canvas.height); // Canvas löschen
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = darkMode ? '#555' : '#ddd';
       for (let x = 0; x < canvas.width; x += gridSize) {
         for (let y = 0; y < canvas.height; y += gridSize) {
-          ctx.strokeStyle = '#ddd'; // Farbe des Rasters
           ctx.strokeRect(x, y, gridSize, gridSize);
         }
       }
+
+      d3.select(svgContainerRef.current).select("svg")
+        .attr("width", canvas.offsetWidth)
+        .attr("height", canvas.offsetHeight);
     };
 
     drawGrid();
-    window.addEventListener('resize', drawGrid); // Neuzeichnen bei Größenänderung
+    window.addEventListener('resize', drawGrid);
 
     return () => {
       window.removeEventListener('resize', drawGrid);
     };
-  }, []);
+  }, [darkMode]);
 
-  const toggleVisibility = () => {
+  const toggleDarkmode = () => {
+    if (darkMode === false) {
+      setDarkMode(true);
+      document.documentElement.classList.add('dark');
+      console.log('Dark Mode aktiviert');
+    } else {
+      setDarkMode(false);
+      document.documentElement.classList.remove('dark');
+    }
+  };
+
+  const toggleAllgemeinDropdown = () => {
     setIsVisible(!isVisible);
   };
 
-  const createSVG = () => {
-    const svgContainer = d3.select(svgContainerRef.current);
-    console.log("clicked!");
-
-    const drag = d3.drag()
-      .on("start", function(event) {
-        // Initialisiere `d` für Drag-Daten
-        d3.select(this).raise().classed("active", true);
-      })
-      .on("drag", function(event) {
-        // Aktualisiere Position des Rechtecks
-        d3.select(this)
-          .attr("x", event.x)
-          .attr("y", event.y);
-
-        // Aktualisiere Position des Textes
-        d3.select(this.parentNode).select("text")
-          .attr("x", event.x + 50)
-          .attr("y", event.y + 25);
-      })
-      .on("end", function(event) {
-        // Stelle sicher, dass die Rechteckposition auf das nächste Raster gerundet wird
-        d3.select(this)
-          .attr("x", Math.round(event.x / 20) * 20)
-          .attr("y", Math.round(event.y / 20) * 20);
-
-        // Aktualisiere den Text auf die neue Position
-        d3.select(this.parentNode).select("text")
-          .attr("x", Math.round(event.x / 20) * 20 + 50)
-          .attr("y", Math.round(event.y / 20) * 20 + 25);
-
-        d3.select(this).classed("active", false);
-      });
-
-    // SVG hinzufügen
-    const svg = svgContainer
-      .append("svg")
-      .attr("width", 1000)
-      .attr("height", 100)
-      .attr("class", "inline-block mr-4 cursor-pointer") // Tailwind-Klassen zum Anordnen und Zeiger-Cursor
-
-    // Rechteck hinzufügen
-    svg
-      .append("rect")
-      .attr("width", 100)
-      .attr("height", 50)
-      .attr("fill", "#3b82f6") // Blaue Farbe des Rechtecks
-      .attr("x", 0)
-      .attr("y", 0)
-      .call(drag); // Drag-Verhalten hinzufügen
-
-    svg
-      .append("text")
-      .attr("x", 50) // X-Position des Textes (zentriert)
-      .attr("y", 25) // Y-Position des Textes (zentriert)
-      .attr("dy", ".35em") // Vertikale Ausrichtung
-      .attr("text-anchor", "middle") // Horizontale Ausrichtung
-      .attr("fill", "white") // Textfarbe
-      .text("Start"); // Textinhalt
+  const toggleFunctionsDropdown = () => {
+    setIsFunctionsDropdownOpen(!isFunctionsDropdownOpen);
   };
 
+  const createStartSVG = () => createSVG(d3.select(svgContainerRef.current), canvasRef.current.offsetWidth, canvasRef.current.offsetHeight, "Start", "#3b82f6");
+  const createFunctionSVG = () => createSVG(d3.select(svgContainerRef.current), canvasRef.current.offsetWidth, canvasRef.current.offsetHeight, "Function", "#475569");
+  const createSwitchSVG = () => createSVG(d3.select(svgContainerRef.current), canvasRef.current.offsetWidth, canvasRef.current.offsetHeight, "Switch", "#16a34a");
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between">
-      <Head>
-        <script src="https://kit.fontawesome.com/fa58a785b1.js" crossorigin="anonymous"></script>
-      </Head>
+    <main className="flex min-h-screen flex-col items-center justify-between overflow-y-hidden">
       <div className="flex w-full h-full text-sm">
-        <div className="menuDiv border-2 min-h-screen max-w-xs pr-8 p-2 color">
+        <div className="menuDiv flex flex-col items-start border-2 min-h-screen max-w-xs pr-8 p-2 color dark:bg-zinc-900 dark:text-white dark:border-zinc-800">
           <input type="text" placeholder="Nodes suchen.." />
-          <button onClick={toggleVisibility} className="block">Allgemein
+          <button onClick={toggleAllgemeinDropdown} className="block text-lg font-bold my-1">Allgemein
             <i className="fa-solid fa-caret-down"></i>
           </button>
           {isVisible && (
             <div className="nodeDropdown">
-              <a href="#test1">Test1</a>
-              <a href="#test2">Test2</a>
-              <a href="#test3">Test3</a>
+              <button onClick={createStartSVG} className="block bg-blue-500 text-white px-4 py-2 rounded mb-2">
+                Start
+              </button>
+              <button onClick={createFunctionSVG} className="block bg-slate-500 text-white px-4 py-2 rounded mb-2">
+                Function
+              </button>
+              <button onClick={createSwitchSVG} className="block bg-green-600 text-white px-4 py-2 rounded mb-2">
+                Switch
+              </button>
             </div>
           )}
-          <button className="block">Funktionen</button>
-          <button className="block">Anderes</button>
-          <button onClick={createSVG} className="block bg-blue-500 text-white px-4 py-2 rounded">
-            Hier klicken
+          <button onClick={toggleFunctionsDropdown} className="block text-lg font-bold my-1">
+            Funktionen
+            <i className={`fa-solid fa-caret-${isFunctionsDropdownOpen ? 'up' : 'down'}`}></i>
           </button>
+          {isFunctionsDropdownOpen && (
+            <div className="nodeDropdown">
+              <button onClick={createFunctionSVG} className="block bg-slate-500 text-white px-4 py-2 rounded mb-2">
+                Function
+              </button>
+              <button onClick={createSwitchSVG} className="block bg-green-600 text-white px-4 py-2 rounded mb-2">
+                Switch
+              </button>
+            </div>
+          )}
+          <button className="block text-lg font-bold my-1">Anderes</button>
+          <label className="switch mt-auto flex">
+            <input type="checkbox" className="sr-only peer" onChange={toggleDarkmode} />
+            {darkMode ? 'Lichtmodus aktivieren:' : 'Dunkelmodus aktivieren:'}
+            <div className="relative ml-1 w-11 h-6 bg-gray-400 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+            <span className="slider round"></span>
+          </label>
         </div>
         <div className="flex-1 relative flex">
-          <canvas ref={canvasRef} className="w-full h-full"></canvas>
+          <canvas ref={canvasRef} className="w-full h-full dark:bg-zinc-900"></canvas>
           <div ref={svgContainerRef} id="svg-container" className="absolute inset-0 flex items-start"></div>
         </div>
       </div>
-      <div id="functionContainer"></div>
     </main>
   );
 }
