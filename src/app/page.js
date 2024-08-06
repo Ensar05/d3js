@@ -1,13 +1,8 @@
 "use client"
-import React, {
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
-
+import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
-
 import { createSVG } from './svgNodes';
+import svgContainer from './svgNodes';
 
 export default function Home() {
   const [isVisible, setIsVisible] = useState(true);
@@ -33,7 +28,7 @@ export default function Home() {
         }
       }
 
-      d3.select(svgContainerRef.current).select("svg")
+      d3.select(svgContainerRef.current)
         .attr("width", canvas.offsetWidth)
         .attr("height", canvas.offsetHeight);
     };
@@ -44,6 +39,7 @@ export default function Home() {
     return () => {
       window.removeEventListener('resize', drawGrid);
     };
+
   }, [darkMode]);
 
   const toggleDarkmode = () => {
@@ -57,6 +53,7 @@ export default function Home() {
     }
   };
 
+
   const toggleAllgemeinDropdown = () => {
     setIsVisible(!isVisible);
   };
@@ -65,9 +62,9 @@ export default function Home() {
     setIsFunctionsDropdownOpen(!isFunctionsDropdownOpen);
   };
 
-  const createStartSVG = () => createSVG(d3.select(svgContainerRef.current), canvasRef.current.offsetWidth, canvasRef.current.offsetHeight, "Start", "#3b82f6");
-  const createFunctionSVG = () => createSVG(d3.select(svgContainerRef.current), canvasRef.current.offsetWidth, canvasRef.current.offsetHeight, "Function", "#475569");
-  const createSwitchSVG = () => createSVG(d3.select(svgContainerRef.current), canvasRef.current.offsetWidth, canvasRef.current.offsetHeight, "Switch", "#16a34a");
+  const createStartSVG = () => createSVG(d3.select(svgContainerRef.current), canvasRef.current.offsetWidth, canvasRef.current.offsetHeight, "Start", "#3b82f6", darkMode);
+  const createFunctionSVG = () => createSVG(d3.select(svgContainerRef.current), canvasRef.current.offsetWidth, canvasRef.current.offsetHeight, "Function", "#475569", darkMode);
+  const createSwitchSVG = () => createSVG(d3.select(svgContainerRef.current), canvasRef.current.offsetWidth, canvasRef.current.offsetHeight, "Switch", "#16a34a", darkMode);
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-between overflow-y-hidden">
@@ -114,7 +111,7 @@ export default function Home() {
         </div>
         <div className="flex-1 relative flex">
           <canvas ref={canvasRef} className="w-full h-full dark:bg-zinc-900"></canvas>
-          <div ref={svgContainerRef} id="svg-container" className="absolute inset-0 flex items-start"></div>
+          <svg ref={svgContainerRef} id="svg-container" className="absolute inset-0 flex items-center"></svg>
         </div>
       </div>
     </main>
