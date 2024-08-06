@@ -5,8 +5,9 @@ const svgData = [];
 export const createSVG = (svgContainer, canvasWidth, canvasHeight, type, color, darkMode) => {
   console.log("Svg node:", type, "wurde erstellt");
 
-  const nodeElement = svgContainer.append("g")
-    .attr("class", "node"); // Setze eine Klasse für das Knoten-Element
+  const nodeElement = svgContainer
+    .append("g")
+    .attr("class", "node");
 
   const rect = nodeElement
     .append("rect")
@@ -24,7 +25,7 @@ export const createSVG = (svgContainer, canvasWidth, canvasHeight, type, color, 
     .attr("text-anchor", "middle")
     .attr("fill", "white")
     .text(type)
-    .classed("cursor-pointer", true);
+    .classed("cursor-pointer select-none", true);
 
   const input_connection = nodeElement
     .append("circle")
@@ -89,42 +90,70 @@ export const createSVG = (svgContainer, canvasWidth, canvasHeight, type, color, 
 
   output_connection.call(connectlines);
 
-  // Nodes ziehen
   const drag = d3.drag()
-    .on("start", function (event) {
-      d3.select(this).raise().classed("active", true);
-    })
-    .on("drag", function (event) {
+  .on("start", function (event) {
+    // Aktuelle Position des Nodes erfassen
+    const [startX, startY] = d3.pointer(event, svgContainer.node());
+    // Ursprüngliche Position des Nodes erfassen
+    const transform = d3.select(this).attr("transform");
+    const translate = transform ? transform.match(/translate\((.+),(.+)\)/) : [0, 0, 0];
+    const offsetX = startX - parseFloat(translate[1]);
+    const offsetY = startY - parseFloat(translate[2]);
+
+    // Daten an das Element anhängen
+    d3.select(this)
+      .raise()
+      .attr("data-offset-x", offsetX)
+      .attr("data-offset-y", offsetY);
+    
+      console.log(startX, startY, offsetX, offsetY);
+  })
+  .on("drag", function (event) {
+    // Offset-Werte abrufen
+    const offsetX = parseFloat(d3.select(this).attr("data-offset-x"));
+    const offsetY = parseFloat(d3.select(this).attr("data-offset-y"));
+
+    // Aktuelle Position des Mauszeigers erfassen
+    const [mouseX, mouseY] = d3.pointer(event, svgContainer.node());
+    const x = mouseX - offsetX;
+    const y = mouseY - offsetY;
+
+    // Node-Element verschieben
+    d3.select(this)
+      .attr("transform", `translate(${x},${y})`);
+  })
+  .on("end", function (event) {
+    // Offset-Werte abrufen
+    const offsetX = parseFloat(d3.select(this).attr("data-offset-x"));
+    const offsetY = parseFloat(d3.select(this).attr("data-offset-y"));
+
+    // Aktuelle Position des Mauszeigers erfassen
+    const [mouseX, mouseY] = d3.pointer(event, svgContainer.node());
+    const x = mouseX - offsetX;
+    const y = mouseY - offsetY;
+
+    if (x < 0 || y < 0) {
+      d3.select(this).remove();
+    } else {
       d3.select(this)
-        .attr("transform", `translate(${event.x},${event.y})`);
-    })
-    .on("end", function (event) {
-      const x = Math.round(event.x);
-      const y = Math.round(event.y);
-      if (x < 0 || y < 0) {
-        d3.select(this).remove();
-      } else {
-        d3.select(this)
-          .attr("transform", `translate(${x},${y})`);
-      }
-      d3.select(this).classed("active", false);
+        .attr("transform", `translate(${x},${y})`);
+    }
 
-      const svgElement = {
-        type: type,
-        color: color,
-        x: x,
-        y: y,
-        width: 100,
-        height: 50
-      };
+    const svgElement = {
+      type: type,
+      color: color,
+      x: x,
+      y: y,
+      width: 100,
+      height: 50
+    };
+    console.log(x, y);
 
-      /**
-      svgData.push(svgElement);
-      console.log(JSON.stringify(svgData, null, 2));
-      */
-    });
+    // svgData.push(svgElement);
+    // console.log(JSON.stringify(svgData, null, 2));
+  });
 
-  nodeElement.call(drag);
+nodeElement.call(drag);
 
   const initialSvgElement = {
     type: type,
