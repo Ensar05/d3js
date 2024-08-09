@@ -8,7 +8,16 @@ export const createSVG = (svgContainer, canvasWidth, canvasHeight, type, color, 
   // Erstelle das nodeElement als Gruppe
   const nodeElement = svgContainer
     .append("g")
-    .attr("class", "node");
+    .attr("class", "node")
+    .on("click", (event) => {
+      event.stopPropagation();
+      rect
+        .style('stroke', 'orange')
+        .style("stroke-width", "2px")
+
+      document.getElementById('nodeMenu').classList.add('opacity-100')
+    }
+    );
 
   const rect = nodeElement
     .append("rect")
@@ -17,7 +26,9 @@ export const createSVG = (svgContainer, canvasWidth, canvasHeight, type, color, 
     .attr("rx", 8)
     .attr("ry", 8)
     .attr("fill", color)
-    .classed("border-2 border-red-600", true);
+    .style("stroke", "black")
+    .style("stroke-width", "1px")
+
 
   const text = nodeElement
     .append("text")
@@ -50,14 +61,19 @@ export const createSVG = (svgContainer, canvasWidth, canvasHeight, type, color, 
     .style("stroke-width", "1px")
     .classed("lineConnected", false);
 
-  // Variable für die Verbindungslinien
+
   const connections = [];
 
-  // Drag für das Erstellen von Linien
+  svgContainer.on("click", () => {
+    rect
+      .style('stroke', 'black')
+      .style("stroke-width", "1px")
+    document.getElementById('nodeMenu').classList.remove('opacity-100')
+  })
+
   const connectlines = d3.drag()
     .on("start", function (event) {
       const [mouseX, mouseY] = d3.pointer(event, svgContainer.node());
-      // Erstelle eine Linie, aber füge sie noch nicht hinzu
       const newLine = svgContainer
         .append("line")
         .attr("x1", mouseX)
@@ -67,9 +83,8 @@ export const createSVG = (svgContainer, canvasWidth, canvasHeight, type, color, 
         .attr("stroke-width", 2)
         .attr("stroke", darkMode ? "white" : "black")
         .classed("line", true)
-        .lower();  // Stelle sicher, dass sie hinter anderen Elementen ist
+        .lower(); 
 
-      // Speichere die neue Linie in den Verbindungen
       connections.push({ line: newLine, from: output_connection });
     })
     .on("drag", function (event) {
@@ -91,7 +106,7 @@ export const createSVG = (svgContainer, canvasWidth, canvasHeight, type, color, 
           const inputCircle = d3.select(this);
           const inputNode = inputCircle.node().parentNode;
 
-          // Canvas Position des inputCircle berechnen
+          // Container Position des inputCircle berechnen
           const circlePos = inputCircle.node().getBoundingClientRect();
           const svgPos = svgContainer.node().getBoundingClientRect();
 
@@ -120,6 +135,10 @@ export const createSVG = (svgContainer, canvasWidth, canvasHeight, type, color, 
 
   output_connection.call(connectlines);
 
+
+  const nodemenu = document.getElementById('nodeMenu')
+  const deleteicon = document.getElementById('test')
+  let selected = false;
   // Drag für das Verschieben von Knoten
   const drag = d3.drag()
     .on("start", function (event) {
@@ -134,6 +153,8 @@ export const createSVG = (svgContainer, canvasWidth, canvasHeight, type, color, 
         .raise()
         .attr("data-offset-x", offsetX)
         .attr("data-offset-y", offsetY);
+
+      selected = true;
     })
     .on("drag", function (event) {
       const offsetX = parseFloat(d3.select(this).attr("data-offset-x"));
@@ -164,6 +185,7 @@ export const createSVG = (svgContainer, canvasWidth, canvasHeight, type, color, 
             .attr("y2", newCy);
         }
       });
+      deleteicon.classList.add('opacity-100')
     })
     .on("end", function (event) {
       const offsetX = parseFloat(d3.select(this).attr("data-offset-x"));
@@ -188,19 +210,25 @@ export const createSVG = (svgContainer, canvasWidth, canvasHeight, type, color, 
         width: 100,
         height: 50
       };
-      console.log(x, y);
+      console.log(x, y, type, color);
+      deleteicon.classList.remove('opacity-100')
     });
+
+  if (selected === true) {
+    nodemenu.classList.add("opacity-100")
+  }
 
   nodeElement.call(drag);
 
   const initialSvgElement = {
     type: type,
     color: color,
-    x: 0, 
+    x: 0,
     y: 0,
     width: 100,
     height: 50
   };
+  console.log(initialSvgElement)
 };
 
 export const clearAllNodes = () => {
