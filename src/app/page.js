@@ -106,7 +106,7 @@ export default function Home() {
         </div>
         <div className="flex-1 relative flex select-none">
           <canvas ref={canvasRef} className="w-full h-full dark:bg-zinc-900 z-0"></canvas>
-          <div id="nodeMenu" className='absolute right-0 w-32 h-full color opacity-0'>{svgNodes.initalSvgElement.type}</div>
+          <div id="nodeMenu" className='absolute right-0 w-32 h-full color opacity-0'></div>
           <button className="absolute bottom-0 z-50 text-white px-4 py-2" onClick={svgNodes.clearAllNodes}>
           <img src="././icons/edit.png"/>
           </button>
