@@ -2,33 +2,33 @@ import * as d3 from 'd3';
 const svgData = [];
 const connections = [];
 
-export const createSVG = (svgContainer, type, color, darkMode) => {
+export const createSVG = (svgContainer, type, color, darkMode, connection) => {
   console.log("SVG node:", type, "wurde erstellt");
+
+  const nodeId = `node-${Math.random().toString(36).substr(2, 9)}`;
+  const outputConnectionId = `output-${Math.random().toString(36).substr(2, 9)}`;
 
   const initialSvgElement = {
     type: type,
     color: color,
+    nodeId: nodeId
   }
   svgData.push(initialSvgElement)
   console.log(initialSvgElement)
   console.log(svgData)
 
     const nodeMenu = document.getElementById('flowEditor');
-    if (nodeMenu) {
-      nodeMenu.innerHTML = `<p>Type: ${initialSvgElement.type}</p><p>Color: ${initialSvgElement.color}</p>`;
-    }
-
-  const nodeId = `node-${Math.random().toString(36).substr(2, 9)}`;
-  const outputConnectionId = `output-${Math.random().toString(36).substr(2, 9)}`;
+  
 
   const nodeElement = d3.select('#svg-container')
     .append("g")
     .attr("class", "node")
     .attr("id", nodeId)
-    .on("click", (event) => {
+    .on("click", (event, type, color, nodeId) => {
       rect.style('stroke', 'orange').style("stroke-width", "2px")
-      document.getElementById('nodeMenu').classList.add('opacity-100')
+      document.getElementById('nodeMenu').classList.remove('hidden')
       event.stopPropagation();
+      nodeMenu.innerHTML = `<p>Type: ${initialSvgElement.type}</p><p>Color: ${initialSvgElement.color}</p><p>Node: ${initialSvgElement.nodeId}</p>`;
     });
 
   const rect = nodeElement.append("rect")
@@ -69,9 +69,13 @@ export const createSVG = (svgContainer, type, color, darkMode) => {
     .attr("id", outputConnectionId);
 
   svgContainer.on("click", () => {
-    rect.style('stroke', 'black').style("stroke-width", "1px");
-    document.getElementById('nodeMenu').classList.remove('opacity-100');
-  });
+        rect.style('stroke', 'black').style("stroke-width", "1px");
+        document.getElementById('nodeMenu').classList.add('hidden');
+  })
+
+  if (connection === "output") {
+    input_connection.remove()
+  }
 
   const connectlines = d3.drag()
     .on("start", function (event) {
