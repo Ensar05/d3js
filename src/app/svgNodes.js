@@ -17,17 +17,16 @@ export const createSVG = (svgContainer, type, color, darkMode, connection) => {
   console.log(initialSvgElement)
   console.log(svgData)
 
-    const nodeMenu = document.getElementById('flowEditor');
-  
-
+  const nodeMenu = document.getElementById('flowEditor');
   const nodeElement = d3.select('#svg-container')
     .append("g")
     .attr("class", "node")
     .attr("id", nodeId)
-    .on("click", (event, type, color, nodeId) => {
-      rect.style('stroke', 'orange').style("stroke-width", "2px")
-      document.getElementById('nodeMenu').classList.remove('hidden')
+    .on("click", (event) => {
       event.stopPropagation();
+      rect.style('stroke', 'orange').style("stroke-width", "2px");
+      nodeElement.classed("selected", true)
+      document.getElementById('nodeMenu').classList.remove('hidden')
       nodeMenu.innerHTML = `<p>Type: ${initialSvgElement.type}</p><p>Color: ${initialSvgElement.color}</p><p>Node: ${initialSvgElement.nodeId}</p>`;
     });
 
@@ -38,7 +37,8 @@ export const createSVG = (svgContainer, type, color, darkMode, connection) => {
     .attr("ry", 8)
     .attr("fill", color)
     .style("stroke", "black")
-    .style("stroke-width", "1px");
+    .style("stroke-width", "1px")
+    .classed("border", true);
 
   const text = nodeElement.append("text")
     .attr("x", 50)
@@ -69,9 +69,20 @@ export const createSVG = (svgContainer, type, color, darkMode, connection) => {
     .attr("id", outputConnectionId);
 
   svgContainer.on("click", () => {
-        rect.style('stroke', 'black').style("stroke-width", "1px");
-        document.getElementById('nodeMenu').classList.add('hidden');
+    d3.selectAll(".border").style('stroke', 'black').style("stroke-width", "1px");
+    document.getElementById('nodeMenu').classList.add('hidden');
+    nodeElement.classed("selected", false)
   })
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key === "Delete" || event.key === "Backspace") {
+      const selectedElement = d3.selectAll('.selected');
+      if (!selectedElement.empty()) {
+        selectedElement.remove();
+        document.getElementById('nodeMenu').classList.add('hidden');
+      }
+    }
+  });
 
   if (connection === "output") {
     input_connection.remove()
@@ -134,6 +145,7 @@ export const createSVG = (svgContainer, type, color, darkMode, connection) => {
         }
       }
     });
+
 
   output_connection.call(connectlines);
   const deleteicon = document.getElementById('test')
@@ -198,7 +210,59 @@ export const createSVG = (svgContainer, type, color, darkMode, connection) => {
       }
     });
   nodeElement.call(drag);
-  
+
+  const selectAndEdit = d3.drag()
+    .on("start", function (event) {
+      const [startX, startY] = d3.pointer(event, svgContainer.node())
+      const selectRectangular = svgContainer.append("rect")
+        .attr("x", startX)
+        .attr("y", startY)
+        .attr("width", 0)
+        .attr("height", 0)
+        .attr("stroke-width", 1)
+        .attr("stroke", darkMode ? "white" : "black")
+        .attr("fill", "rgba(192, 192, 255, 0.3)")
+        .classed("selectrect", true)
+      event.subject.selectionRectangular = selectRectangular;
+      event.subject.startX = startX;
+      event.subject.startY = startY;
+
+    })
+    .on("drag", function (event) {
+      const [mouseX, mouseY] = d3.pointer(event, svgContainer.node());
+      const startX = event.subject.startX;
+      const startY = event.subject.startY;
+      const selectRectangular = event.subject.selectionRectangular;
+
+      const newX = Math.min(mouseX, startX);
+      const newY = Math.min(mouseY, startY);
+      const newWidth = Math.abs(mouseX - startX);
+      const newHeight = Math.abs(mouseY - startY);
+
+      selectRectangular
+        .attr("x", newX)
+        .attr("y", newY)
+        .attr("width", newWidth)
+        .attr("height", newHeight);
+      console.log(newWidth)
+      event.subject.width = newWidth;
+      event.subject.height = newHeight;
+    })
+    .on("end", function (event) {
+      const nodeInSelect = d3.selectAll(".node")
+      const newWidth = event.subject.width;
+      const newHeight = event.subject.height;
+      const offset = newWidth * newHeight;  
+      nodeElement.each( function() {
+        if(offset) {
+          d3.select(".border").style('stroke', 'orange').style("stroke-width", "2px")
+          nodeElement.classed("selected", true)
+        }
+      })
+      d3.selectAll(".selectrect").remove()
+    })
+  svgContainer.call(selectAndEdit)
+
 };
 
 export const clearAllNodes = () => {
