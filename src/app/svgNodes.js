@@ -2,7 +2,7 @@ import * as d3 from 'd3';
 const svgData = [];
 const connections = [];
 
-export const createSVG = (svgContainer, type, color, darkMode, connection) => {
+export const createSVG = (svgContainer, type, color, darkMode, connection, x, y) => {
   console.log("SVG node:", type, "wurde erstellt");
 
   const nodeId = `node-${Math.random().toString(36).substr(2, 9)}`;
@@ -20,6 +20,7 @@ export const createSVG = (svgContainer, type, color, darkMode, connection) => {
     .append("g")
     .attr("class", "node")
     .attr("id", nodeId)
+    .attr("transform", `translate(${x}, ${y})`)
     .on("click", (event) => {
       event.stopPropagation();
       nodeElement.classed("selected", true)
@@ -118,7 +119,6 @@ export const createSVG = (svgContainer, type, color, darkMode, connection) => {
     if (event.key === 'Control' || event.ctrlKey) {
       const selectedElements = d3.selectAll(".node.selected");
       ctrlPressed = true;
-      console.log('Ctrl-Taste wird gedrückt gehalten.');
       console.log(ctrlPressed)
     }
   });
