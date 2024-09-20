@@ -1,0 +1,30 @@
+{
+    "nodes": [
+        {
+            "id": 1,
+            "type": "Start",
+            "name": "Start",
+            "connections": [],
+            "x": 0,
+            "y": 0
+        },
+        {
+            "id": 2,
+            "type": "Function",
+            "name": "Funktion",
+            "connections": [],
+            "x": 100,
+            "y": 50
+        },
+        {
+            "id": 3,
+            "type": "Switch",
+            "name": "Switch",
+            "connections": [],
+            "x": 140,
+            "y": 120
+        }
+        
+    ]
+
+}

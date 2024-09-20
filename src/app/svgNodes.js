@@ -1,12 +1,20 @@
 import * as d3 from 'd3';
+import { buttons } from './flowData';
 const svgData = [];
 const connections = [];
+const nodeId = `node-${Math.random().toString(36).substr(2, 9)}`;
+const outputConnectionId = `output-${Math.random().toString(36).substr(2, 9)}`;
 
-export const createSVG = (svgContainer, type, color, darkMode, connection, x, y) => {
+export const createSVG = (type, x, y) => {
   console.log("SVG node:", type, "wurde erstellt");
+  const svgContainer = d3.select("#svg-container")
+  const buttonConfig = buttons.find(button => button.name === type);
 
-  const nodeId = `node-${Math.random().toString(36).substr(2, 9)}`;
-  const outputConnectionId = `output-${Math.random().toString(36).substr(2, 9)}`;
+  if (!buttonConfig) {
+    console.error(`Button mit dem Typ ${type} wurde nicht gefunden.`);
+    return;
+  }
+  const { color, connection } = buttonConfig;
 
   const initialSvgElement = {
     type: type,
@@ -14,9 +22,11 @@ export const createSVG = (svgContainer, type, color, darkMode, connection, x, y)
     nodeId: nodeId
   }
   svgData.push(initialSvgElement)
+  console.log(svgData)
+  console.log(initialSvgElement)
 
   const nodeMenu = document.getElementById('flowEditor');
-  const nodeElement = d3.select('#svg-container')
+  const nodeElement = svgContainer
     .append("g")
     .attr("class", "node")
     .attr("id", nodeId)
@@ -78,7 +88,7 @@ export const createSVG = (svgContainer, type, color, darkMode, connection, x, y)
     input_connection.remove()
   }
 
-  function test() {
+  function removeSelectionOnClick() {
     d3.selectAll(".border").style('stroke', 'black').style("stroke-width", "1px");
     document.getElementById('nodeMenu').classList.add('hidden');
     nodeElement.classed("selected", false)
@@ -86,7 +96,7 @@ export const createSVG = (svgContainer, type, color, darkMode, connection, x, y)
   }
 
   svgContainer.on("click", () => {
-    test()
+    removeSelectionOnClick()
   })
 
   document.addEventListener('keydown', function (event) {
@@ -289,7 +299,6 @@ export const createSVG = (svgContainer, type, color, darkMode, connection, x, y)
 
       if (x < 0 || y < 0) {
         d3.select(this).remove();
-        console.log(connections)
       }
 
       connections.forEach((connection) => {
@@ -328,15 +337,13 @@ export const createSVG = (svgContainer, type, color, darkMode, connection, x, y)
         .attr("width", 0)
         .attr("height", 0)
         .attr("stroke-width", 1)
-        .attr("stroke", darkMode ? "white" : "black")
+        .attr("stroke", "black")
         .attr("fill", "rgba(192, 192, 255, 0.3)")
         .classed("selectrect", true)
       event.subject.selectionRectangular = selectRectangular;
       event.subject.startX = startX;
       event.subject.startY = startY;
-      test()
-      // d3.select(".group").remove()
-
+      removeSelectionOnClick()
     })
     .on("drag", function (event) {
       const [mouseX, mouseY] = d3.pointer(event, svgContainer.node());

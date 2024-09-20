@@ -1,0 +1,14 @@
+{
+    "tabs": [
+      {
+        "id": 1,
+        "name": "Tab 1",
+        "nodeIds": []
+      },
+      {
+        "id": 2,
+        "name": "Tab 2",
+        "nodeIds": []
+      }
+    ]
+  }
