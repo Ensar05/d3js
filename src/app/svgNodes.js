@@ -16,14 +16,15 @@ export const createSVG = (type, x, y) => {
   }
   const { color, connection } = buttonConfig;
 
-  const initialSvgElement = {
+  const initialNodeElement = {
+    nodeId: nodeId,
     type: type,
-    color: color,
-    nodeId: nodeId
+    x: x,
+    y: y 
   }
-  svgData.push(initialSvgElement)
+  svgData.push(initialNodeElement)
   console.log(svgData)
-  console.log(initialSvgElement)
+  console.log(initialNodeElement)
 
   const nodeMenu = document.getElementById('flowEditor');
   const nodeElement = svgContainer
@@ -42,7 +43,7 @@ export const createSVG = (type, x, y) => {
           .select("rect").style('stroke', 'black').style("stroke-width", "1px");
 
         document.getElementById('nodeMenu').classList.remove('hidden');
-        nodeMenu.innerHTML = `<p>Type: ${initialSvgElement.type}</p><p>Color: ${initialSvgElement.color}</p><p>Node: ${initialSvgElement.nodeId}</p>`;
+        nodeMenu.innerHTML = `<p>Type: ${initialNodeElement.type}</p><p>Color: ${initialNodeElement.color}</p><p>Node: ${initialNodeElement.nodeId}</p>`;
       }
     });
 
@@ -145,7 +146,7 @@ export const createSVG = (type, x, y) => {
       const newPath = svgContainer.append("path")
         .attr("d", `M${mouseX},${mouseY} L${mouseX},${mouseY}`)
         .attr("stroke-width", 2)
-        .attr("stroke", darkMode ? "white" : "black")
+        .attr("stroke", "black")
         .attr("fill", "none")
         .classed("line z-10", true)
         .lower();
@@ -240,7 +241,7 @@ export const createSVG = (type, x, y) => {
           .style("stroke-width", "2px");
 
         document.getElementById('nodeMenu').classList.remove('hidden');
-        nodeMenu.innerHTML = `<p>Type: ${initialSvgElement.type}</p><p>Color: ${initialSvgElement.color}</p><p>Node: ${initialSvgElement.nodeId}</p>`;
+        nodeMenu.innerHTML = `<p>Type: ${initialNodeElement.type}</p><p>Node: ${initialNodeElement.nodeId}</p>`;
 
       }
     })
@@ -316,14 +317,8 @@ export const createSVG = (type, x, y) => {
           }
         }
       });
-
-      const svgNode = {
-        type: type,
-        color: color,
-        x: x,
-        y: y
-      };
       console.log(`x-Achse: ${x} mauspos: ${mouseX} nodebereich: ${offsetX}`);
+      console.log(svgData)
     });
 
   nodeElement.call(drag);

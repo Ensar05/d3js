@@ -15,6 +15,8 @@ export default function Home() {
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const [isCustomMenuVisible, setIsCustomMenuVisible] = useState(false);
   const [isExportMenuVisible, setIsExportMenuVisible] = useState(false)
+  const [isImportMenuVisible, setIsImportMenuVisible] = useState(false)
+  const [inputJsonText, setInputJsonText] = useState('')
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -62,7 +64,6 @@ export default function Home() {
             svgNodes.createSVG(value, event.x - 306, event.y) //x und y koordinaten noch zu fixen! wenn runter gescrollt wird, sollten sie angepasst werden!
           }
         });
-
       dragCreate(NodeCreate);
 
     };
@@ -93,7 +94,7 @@ export default function Home() {
     document.documentElement.classList.toggle('dark', !darkMode);
   };
 
-  const toggleDropdown = (selectedCategory) => {
+  const toggleCategoryDropdown = (selectedCategory) => {
     if (filteredCategory.includes(selectedCategory)) {
       let categories = filteredCategory.filter((e) => e !== selectedCategory);
       setFilteredCategory(categories);
@@ -125,7 +126,6 @@ export default function Home() {
     });
     setIsCustomMenuVisible(true);
   };
-
 
   const toggleExportMenu = () => {
     d3.json('nodes.json').then(function(data) {
@@ -162,6 +162,16 @@ export default function Home() {
     alert("Die Json File wurde in die Zwischenablage kopiert!")
   }
 
+  const ImportJson = () => {
+    const jsonData = JSON.parse(inputJsonText);
+      
+    if (jsonData.type && typeof jsonData.x === 'number' && typeof jsonData.y === 'number') {
+      svgNodes.createSVG(jsonData.type, jsonData.x, jsonData.y);
+    } else {
+      console.error('Ungültiges JSON-Format.');
+    }
+  }
+
   // const svgContainer = document.getElementById("svg-container")
   // svgContainer.addEventListener("mousedown", function(event) {
   //   if (event.button === 1) {
@@ -182,7 +192,7 @@ export default function Home() {
             {categories.map((category) => (
               <div key={category.name}>
                 <div
-                  onClick={() => toggleDropdown(category.category)}
+                  onClick={() => toggleCategoryDropdown(category.category)}
                   className={`block text-lg font-bold my-1 cursor-pointer ${filteredCategory.includes(category.category) ? "active" : ""}`}
                 >
                   {category.name}
@@ -237,13 +247,25 @@ export default function Home() {
                   <a className='hover:bg-gray-300'>Bearbeiten</a>
                   <a className='hover:bg-gray-300'>Ansicht</a>
                   <hr className='border-t-2 border-gray-400 my-2' />
-                  <a className='hover:bg-gray-300'>Import</a>
+                  <a className='hover:bg-gray-300' onClick={() => {setIsImportMenuVisible(!isImportMenuVisible)}}>Import</a>
                   <a className='hover:bg-gray-300' onClick={() => {setIsExportMenuVisible(!isExportMenuVisible), setMenu(!menu), toggleExportMenu()}}>Export</a>
                   <hr className='border-t-2 border-gray-400 my-2' />
                   <a className='hover:bg-gray-300'>Einstellungen</a>
                   <a className='mt-auto'>v1.0.0</a>
                 </div>
               </div>)}
+              {isImportMenuVisible && (
+                <div className='fixed inset-0 flex justify-center items-center z-50 pointer-none'>
+                  <div className='w-96 h-96 color p-2 flex flex-col border-gray-400 border-2'>
+                  <h2 className='pt-2'>Import</h2>
+                    <textarea className='w-full h-full border-2 border-gray-300 my-2 p-1 rounded overflow-y-scroll select-text cursor-text' value={inputJsonText} onChange={(e) => (setInputJsonText(e.target.value))}/>
+                    <div className='w-full select-none'>
+                      <button className='bg-gray-200 hover:bg-gray-300 w-fit p-1 border-gray-600 border-2 mr-2' onClick={() => setIsImportMenuVisible(!isImportMenuVisible)}>Abbrechen</button>
+                      <button className='bg-blue-500 hover:bg-blue-600 w-fit p-1 border-gray-600 border-2 mr-2 text-white' value="import" onClick={ImportJson}>Import</button>
+                    </div>
+                  </div>
+                </div>
+              )}
               {isExportMenuVisible && (
                 <div className='fixed inset-0 flex justify-center items-center z-50 pointer-none'>
                   <div className='w-96 h-96 color p-2 flex flex-col border-gray-400 border-2'>
