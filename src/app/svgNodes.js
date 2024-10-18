@@ -2,13 +2,15 @@ import * as d3 from 'd3';
 import { buttons } from './flowData';
 const svgData = [];
 const connections = [];
-const nodeId = `node-${Math.random().toString(36).substr(2, 9)}`;
+export const nodeId = `node-${Math.random().toString(36).substr(2, 9)}`;
 const outputConnectionId = `output-${Math.random().toString(36).substr(2, 9)}`;
 
-export const createSVG = (type, x, y) => {
+export const createSVG = (nodeIds, type, x, y) => {
   console.log("SVG node:", type, "wurde erstellt");
   const svgContainer = d3.select("#svg-container")
   const buttonConfig = buttons.find(button => button.name === type);
+
+  console.log(nodeId)
 
   if (!buttonConfig) {
     console.error(`Button mit dem Typ ${type} wurde nicht gefunden.`);
@@ -17,7 +19,7 @@ export const createSVG = (type, x, y) => {
   const { color, connection } = buttonConfig;
 
   const initialNodeElement = {
-    nodeId: nodeId,
+    id: nodeIds,
     type: type,
     x: x,
     y: y 
@@ -30,21 +32,15 @@ export const createSVG = (type, x, y) => {
   const nodeElement = svgContainer
     .append("g")
     .attr("class", "node")
-    .attr("id", nodeId)
     .attr("transform", `translate(${x}, ${y})`)
     .on("click", (event) => {
       event.stopPropagation();
       nodeElement.classed("selected", true)
       .select("rect").style('stroke', 'orange').style("stroke-width", "2px");
-      // Überprüft, ob das aktuelle Element bereits die 'selected' Klasse hat
-      if (!nodeElement.classed("selected") && !ctrlPressed) {
-        // Entfernt die 'selected' Klasse von allen anderen NodeElements
-        d3.selectAll(".node.selected").classed("selected", false)
-          .select("rect").style('stroke', 'black').style("stroke-width", "1px");
-
-        document.getElementById('nodeMenu').classList.remove('hidden');
-        nodeMenu.innerHTML = `<p>Type: ${initialNodeElement.type}</p><p>Color: ${initialNodeElement.color}</p><p>Node: ${initialNodeElement.nodeId}</p>`;
-      }
+    })
+    .on("dblclick", (event) => {
+      document.getElementById('nodeMenu').classList.remove('hidden');
+      nodeMenu.innerHTML = `<p>Type: ${initialNodeElement.type}</p><p>Node: ${initialNodeElement.nodeId}</p>`;
     });
 
   const rect = nodeElement.append("rect")
@@ -96,10 +92,6 @@ export const createSVG = (type, x, y) => {
     d3.selectAll(".node").classed("selected", false)
   }
 
-  svgContainer.on("click", () => {
-    removeSelectionOnClick()
-  })
-
   document.addEventListener('keydown', function (event) {
     if (event.key === "Delete" || event.key === "Backspace") {
       const selectedElement = d3.select(".selected");
@@ -128,7 +120,6 @@ export const createSVG = (type, x, y) => {
 
   document.addEventListener('keydown', function(event) {
     if (event.key === 'Control' || event.ctrlKey) {
-      const selectedElements = d3.selectAll(".node.selected");
       ctrlPressed = true;
       console.log(ctrlPressed)
     }
@@ -214,9 +205,9 @@ export const createSVG = (type, x, y) => {
       d3.select(this)
         .raise()
         .attr("data-offset-x", offsetX)
-        .attr("data-offset-y", offsetY);
+        .attr("data-offset-y", offsetY)
 
-      // Berechne und speichere die Offsets für alle ausgewählten Knoten
+      // Berechnet und speichert die Offsets --> um Alle ausgewählten Nodes zu bewegen
       d3.selectAll(".selected").each(function () {
         const selTransform = d3.select(this).attr("transform");
         const selTranslate = selTransform ? selTransform.match(/translate\((.+),(.+)\)/) : [0, 0, 0];
@@ -227,7 +218,7 @@ export const createSVG = (type, x, y) => {
           .attr("data-offset-y", selOffsetY);
       });
 
-      if (!d3.select(this).classed("selected") && !ctrlPressed) {
+      if (!d3.select(this).classed("selected") && ctrlPressed === false) {
         d3.selectAll(".node.selected")
           .classed("selected", false)
           .select("rect")
@@ -239,10 +230,6 @@ export const createSVG = (type, x, y) => {
           .select("rect")
           .style('stroke', 'orange')
           .style("stroke-width", "2px");
-
-        document.getElementById('nodeMenu').classList.remove('hidden');
-        nodeMenu.innerHTML = `<p>Type: ${initialNodeElement.type}</p><p>Node: ${initialNodeElement.nodeId}</p>`;
-
       }
     })
     .on("drag", function (event) {
@@ -317,8 +304,8 @@ export const createSVG = (type, x, y) => {
           }
         }
       });
-      console.log(`x-Achse: ${x} mauspos: ${mouseX} nodebereich: ${offsetX}`);
-      console.log(svgData)
+      console.log(`x-Achse: ${x} mauspos: ${mouseX} nodebereich: ${offsetX} nodeX: ${ d3.select(this).attr("transform")}`);
+      
     });
 
   nodeElement.call(drag);

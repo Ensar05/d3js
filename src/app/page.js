@@ -3,7 +3,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import * as svgNodes from './svgNodes';
 import { categories, buttons } from './flowData';
-import drag from './svgNodes';
 
 let nodesjsonfile = null
 
@@ -16,7 +15,8 @@ export default function Home() {
   const [isCustomMenuVisible, setIsCustomMenuVisible] = useState(false);
   const [isExportMenuVisible, setIsExportMenuVisible] = useState(false)
   const [isImportMenuVisible, setIsImportMenuVisible] = useState(false)
-  const [inputJsonText, setInputJsonText] = useState('')
+  const [inputJsonText, setInputJsonText] = useState("")
+  const [error, setError] = useState("")
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -61,7 +61,7 @@ export default function Home() {
           const value = clonedNode.value;
           const bgColor = clonedNode.bgColor;
           if (event.x > 256) {
-            svgNodes.createSVG(value, event.x - 306, event.y) //x und y koordinaten noch zu fixen! wenn runter gescrollt wird, sollten sie angepasst werden!
+            svgNodes.createSVG(svgNodes.nodeId ,value, event.x - 306, event.y) //x und y koordinaten noch zu fixen! wenn runter gescrollt wird, sollten sie angepasst werden!
           }
         });
       dragCreate(NodeCreate);
@@ -70,6 +70,7 @@ export default function Home() {
     d3.json('nodes.json').then(data => {
         data.nodes.forEach(node => {
           svgNodes.createSVG(
+            svgNodes.nodeId,
             node.type,
             node.x,       
             node.y          
@@ -96,10 +97,12 @@ export default function Home() {
 
   const toggleCategoryDropdown = (selectedCategory) => {
     if (filteredCategory.includes(selectedCategory)) {
-      let categories = filteredCategory.filter((e) => e !== selectedCategory);
+      let categories = filteredCategory.filter((e) => e !== selectedCategory); 
       setFilteredCategory(categories);
+      console.log("ausgeschaltet")
     } else {
-      setFilteredCategory([...filteredCategory, selectedCategory]);
+      setFilteredCategory([...filteredCategory, selectedCategory]); 
+      console.log("eingeschaltet")
     }
   };
 
@@ -162,13 +165,40 @@ export default function Home() {
     alert("Die Json File wurde in die Zwischenablage kopiert!")
   }
 
-  const ImportJson = () => {
+  //wenn ImportButton geklickt wird 
+  const ImportJson = () => { 
     const jsonData = JSON.parse(inputJsonText);
       
-    if (jsonData.type && typeof jsonData.x === 'number' && typeof jsonData.y === 'number') {
-      svgNodes.createSVG(jsonData.type, jsonData.x, jsonData.y);
+    if (jsonData.nodes) {
+      jsonData.nodes.forEach(js => {
+        svgNodes.createSVG(svgNodes.nodeId, js.type, js.x, js.y);
+      })
     } else {
-      console.error('Ungültiges JSON-Format.');
+      setError("Fail")
+    }
+
+
+  }
+
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        try {
+          const jsonTest = e.target.result
+          // const jsonData = JSON.parse(e.target.result)
+          // const jsonString = JSON.stringify(jsonData, null, 2)
+          setInputJsonText(jsonTest)
+          console.log(inputJsonText)
+        }
+        catch {
+          console.log("importieren hat nicht geklappt")
+          setInputJsonText(null);
+        }
+      }
+      reader.readAsText(file)
     }
   }
 
@@ -205,7 +235,7 @@ export default function Home() {
                         <button
                           key={button.name}
                           value={button.name}
-                          onClick={() => svgNodes.createSVG( `${button.name}`,  0, 0)}
+                          onClick={() => svgNodes.createSVG(svgNodes.nodeId, `${button.name}`,  0, 0)}
                           className={`Button block ${button.bgColor} text-white px-4 py-2 rounded mb-2`}
                         >
                           {button.name}
@@ -247,7 +277,7 @@ export default function Home() {
                   <a className='hover:bg-gray-300'>Bearbeiten</a>
                   <a className='hover:bg-gray-300'>Ansicht</a>
                   <hr className='border-t-2 border-gray-400 my-2' />
-                  <a className='hover:bg-gray-300' onClick={() => {setIsImportMenuVisible(!isImportMenuVisible)}}>Import</a>
+                  <a className='hover:bg-gray-300' onClick={() => {setIsImportMenuVisible(!isImportMenuVisible), setMenu(!menu)}}>Import</a>
                   <a className='hover:bg-gray-300' onClick={() => {setIsExportMenuVisible(!isExportMenuVisible), setMenu(!menu), toggleExportMenu()}}>Export</a>
                   <hr className='border-t-2 border-gray-400 my-2' />
                   <a className='hover:bg-gray-300'>Einstellungen</a>
@@ -258,10 +288,12 @@ export default function Home() {
                 <div className='fixed inset-0 flex justify-center items-center z-50 pointer-none'>
                   <div className='w-96 h-96 color p-2 flex flex-col border-gray-400 border-2'>
                   <h2 className='pt-2'>Import</h2>
-                    <textarea className='w-full h-full border-2 border-gray-300 my-2 p-1 rounded overflow-y-scroll select-text cursor-text' value={inputJsonText} onChange={(e) => (setInputJsonText(e.target.value))}/>
+                    <textarea className='w-full h-full border-2 border-gray-300 my-2 p-1 rounded overflow-y-scroll select-text cursor-text' value={inputJsonText} onChange={(e) => (setInputJsonText(e.target.value), console.log(inputJsonText))}/>
                     <div className='w-full select-none'>
                       <button className='bg-gray-200 hover:bg-gray-300 w-fit p-1 border-gray-600 border-2 mr-2' onClick={() => setIsImportMenuVisible(!isImportMenuVisible)}>Abbrechen</button>
-                      <button className='bg-blue-500 hover:bg-blue-600 w-fit p-1 border-gray-600 border-2 mr-2 text-white' value="import" onClick={ImportJson}>Import</button>
+                      <button className='bg-blue-500 hover:bg-blue-600 w-fit p-1 border-gray-600 border-2 mr-2 mb-2 text-white' value="import" onClick={ImportJson}>Import</button>
+                      <input id="file" name="file" type="file" accept='.json' onChange={handleFileChange} />
+                      {error && <p style={{ color: 'red' }}>{error}</p>}
                     </div>
                   </div>
                 </div>
