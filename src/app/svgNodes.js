@@ -1,9 +1,11 @@
 import * as d3 from 'd3';
 import { buttons } from './flowData';
+import { home } from './page'
+import React, { useEffect, useRef, useState } from 'react';
+export const nodeId = () => `node-${Math.random().toString(36).substr(2, 9)}`;
+const outputConnectionId = () => `output-${Math.random().toString(36).substr(2, 9)}`; //Damit wird überprüft welche Linie gelöscht werden soll, wenn connectionId gelöscht wird (z.117)
 const svgData = [];
 const connections = [];
-export const nodeId = `node-${Math.random().toString(36).substr(2, 9)}`;
-const outputConnectionId = `output-${Math.random().toString(36).substr(2, 9)}`;
 
 export const createSVG = (nodeIds, type, x, y) => {
   console.log("SVG node:", type, "wurde erstellt");
@@ -33,6 +35,7 @@ export const createSVG = (nodeIds, type, x, y) => {
     .append("g")
     .attr("class", "node")
     .attr("transform", `translate(${x}, ${y})`)
+    .attr("id", nodeId)
     .on("click", (event) => {
       event.stopPropagation();
       nodeElement.classed("selected", true)
@@ -85,6 +88,14 @@ export const createSVG = (nodeIds, type, x, y) => {
     input_connection.remove()
   }
 
+  // Wenn Rechtsklick gemacht wird
+  // svgContainer.addEventListener("mousedown", function(event) {
+  //   if (event.button === 1) {
+  //     console.log("Mausrad gedrückt");
+  //     event.preventDefault();
+  //   }
+  // });
+
   function removeSelectionOnClick() {
     d3.selectAll(".border").style('stroke', 'black').style("stroke-width", "1px");
     document.getElementById('nodeMenu').classList.add('hidden');
@@ -100,6 +111,7 @@ export const createSVG = (nodeIds, type, x, y) => {
         const selectedNodeId = selectedElement.attr("id");
 
         connections.forEach((connection) => {
+          //Wird überprüft welche Node angeklickt wurde der eine connection beinhaltet mit der id des ausgewählten nodes. Jedes Node hat eine eindeutige Id zur Identifkation.
           const isFromSelectedNode = connection.from && connection.from.node().parentNode.id === selectedNodeId;
           const isToSelectedNode = connection.to && connection.to.id === selectedNodeId;
 
@@ -113,6 +125,7 @@ export const createSVG = (nodeIds, type, x, y) => {
         selectedElement.remove();
         document.getElementById('nodeMenu').classList.add('hidden');
       }
+      
     }
   });
 
