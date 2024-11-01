@@ -1,6 +1,5 @@
 import * as d3 from 'd3';
 import { buttons } from './flowData';
-import { home } from './page'
 import React, { useEffect, useRef, useState } from 'react';
 export const nodeId = () => `node-${Math.random().toString(36).substr(2, 9)}`;
 const outputConnectionId = () => `output-${Math.random().toString(36).substr(2, 9)}`; //Damit wird überprüft welche Linie gelöscht werden soll, wenn connectionId gelöscht wird (z.117)
