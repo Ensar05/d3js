@@ -27,21 +27,38 @@ export default function Home() {
   const canvasRef = useRef(null);
   const fieldRef = useRef(null);
 
+  const gridSize = 20;
+
   useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const gridSize = 20;
-
     const drawGrid = () => {
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
+      const svg = d3.select(fieldRef.current);
+      svg.selectAll("*").remove();  // Clear existing grid
+      
+      const width = svg.node().clientWidth;
+      const height = svg.node().clientHeight;
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.strokeStyle = darkMode ? '#555' : '#ddd';
-      for (let x = 0; x < canvas.width; x += gridSize) {
-        for (let y = 0; y < canvas.height; y += gridSize) {
-          ctx.strokeRect(x, y, gridSize, gridSize);
-        }
+      const gridColor = darkMode ? '#333' : '#ddd';
+
+      // Draw vertical lines
+      for (let x = 0; x < width; x += gridSize) {
+        svg.append("line")
+          .attr("x1", x)
+          .attr("y1", 0)
+          .attr("x2", x)
+          .attr("y2", height)
+          .attr("stroke", gridColor)
+          .attr("stroke-width", 1);
+      }
+
+      // Draw horizontal lines
+      for (let y = 0; y < height; y += gridSize) {
+        svg.append("line")
+          .attr("x1", 0)
+          .attr("y1", y)
+          .attr("x2", width)
+          .attr("y2", y)
+          .attr("stroke", gridColor)
+          .attr("stroke-width", 1);
       }
 
       const NodeCreate = d3.selectAll(".Button");
@@ -249,11 +266,11 @@ export default function Home() {
 
 
   return (
-    <main id="FlowEditor" className="flex flex-row overflow-hidden">
+    <main id="FlowEditor" className="flex flex-row">
       <div className={`${blurredBackground ? "fixed z-40 opacity-40 bg-gray-500 h-screen w-full" : "hidden"}`}></div>
-      <div id="mainContent" className="flex flex-row text-sm">
-        <div id="menuDiv" className="h-screen flex flex-row items-start z-30 min-w-60 select-none">
-          <div className="flex flex-col h-full fixed w-60 p-2 color border-r-2 border-gray-400 dark:bg-zinc-900 dark:text-white dark:border-zinc-800">
+      <div id="mainContent" className="flex flex-row flex-grow text-sm">
+        <div id="menuDiv" className="h-full flex flex-row items-start z-30 min-w-60 select-none">
+          <div className="flex flex-col fixed h-full w-60 p-2 color border-r-2 border-gray-400 dark:bg-zinc-900 dark:text-white dark:border-zinc-800">
             <div className="flex bg-white items-center w-full pl-1">
               <img src='././icons/search.png' className='h-fit' alt="Search" />
               <input type="text" placeholder="Nodes suchen.." onChange={handleSearch} className="h-8 pl-1 outline-0" />
@@ -290,12 +307,12 @@ export default function Home() {
               <div className="relative ml-1 w-11 h-6 bg-gray-400 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
             </label>
           </div>
-          <div className='flex flex-col h-full justify-center items-center'>
+          <div className='flex flex-col color border-r-2 border-gray-400 h-full justify-center items-center'>
             <img id="test" className='opacity-0 transition-opacity duration-300 select-none' src='././icons/bin.png' alt="Bin" />
           </div>
         </div>
-        <div id="fieldSide" className="flex flex-col w-full select-none">
-          <div id="FlowSelektor" className='flex w-screen z-30 color'>
+        <div id="fieldSide" className="flex flex-col flex-1 select-none overflow-hidden dark:bg-zinc-900">
+          <div id="FlowSelektor" className='flex w-full z-30 color'>
             <div className='flex fixed h-10 justify-between w-full color border-b-2 border-gray-400'>
               <div className='flex fixed items-center color '>
                 <div className='ml-3 p-2 pr-16 border-x-2 border-t-2 border-gray-400 cursor-pointer'>
@@ -355,23 +372,21 @@ export default function Home() {
             setIsSettingsVisible={setIsSettingsVisible}
             setBlurredBackground={setBlurredBackground}
           />
-          <div id="field" className="flex flex-col overflow-x-scroll overflow-y-scroll mt-10" style={{ height: '4000px', width: '4000px' }}>
-            <div className="relative w-[4000px] h-[4000px]">
-              <canvas ref={canvasRef} className="h-full w-full dark:bg-zinc-900"></canvas>
+            <div id="field" className="absolute left-60 top-0 right-0 bottom-0 mt-10 overflow-auto">
               <svg
                 ref={fieldRef}
                 id="svg-container"
                 onContextMenu={handleContextMenu}
-                onMouseDown={handleMouseDown}
+                onMouseDown={handleMouseDown}b
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
-                className="absolute top-0 left-0 h-full w-full"
+                width="4000px"
+                height="4000px"
                 style={{ transform: `translate(${translate.x}px, ${translate.y}px)` }}
               >
               </svg>
             </div>
-          </div>
-          <button className="absolute bottom-0 left-0 z-50 text-white px-4 py-2" onClick={svgNodes.clearAllNodes}>
+          <button className="absolute h-fit bottom-10 left-0 z-50 text-white px-4 py-2" onClick={svgNodes.clearAllNodes}>
             <img src="././icons/edit.png" alt="Edit" />
           </button>
           {isCustomMenuVisible && (
