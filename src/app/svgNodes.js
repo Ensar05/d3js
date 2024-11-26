@@ -1,30 +1,122 @@
 import * as d3 from 'd3';
 import { buttons } from './flowData';
-import React, { useEffect, useRef, useState } from 'react';
-export const nodeId = () => `node-${Math.random().toString(36).substr(2, 9)}`;
+import { uuid } from 'uuidv4';
 const outputConnectionId = () => `output-${Math.random().toString(36).substr(2, 9)}`; //Damit wird überprüft welche Linie gelöscht werden soll, wenn connectionId gelöscht wird (z.117)
-const svgData = [];
+export const svgData = [];
 const connections = [];
 
-export const createSVG = (nodeIds, type, x, y) => {
-  console.log("SVG node:", type, "wurde erstellt");
-  const svgContainer = d3.select("#svg-container")
-  const buttonConfig = buttons.find(button => button.name === type);
 
-  console.log(nodeId)
+export const selectAllNodes = () => {
+ d3.selectAll(".node").classed("selected", true)
+} 
 
-  if (!buttonConfig) {
-    console.error(`Button mit dem Typ ${type} wurde nicht gefunden.`);
+let copiedNodes = []
+let copiedconnections = []
+
+export const CopyNode = () => {
+ copiedNodes = []
+ copiedconnections = []
+      
+ const selectedNodes = d3.selectAll(".node.selected");  
+ selectedNodes.each(function () {
+   const nodeElement = d3.select(this);
+   const originalTransform = nodeElement.attr("transform");
+   const translate = originalTransform ? originalTransform.match(/translate\((.+),(.+)\)/) : [0, 0, 0];
+   const originalX = parseFloat(translate[1]);
+   const originalY = parseFloat(translate[2]);
+
+   const type = nodeElement.select("text").text();
+
+   copiedNodes.push({
+    type,
+    x: originalX,
+    y: originalY
+   })
+ });
+ const countNode = copiedNodes.length
+ console.log(countNode)
+ const countNodeD3 = d3.count(copiedNodes, count => count.x)
+ console.log(countNodeD3)
+}
+
+export const copyPaste = ({ menuPosition }) => {
+  d3.selectAll(".node.selected").classed("selected", false);
+
+  if (copiedNodes.length === 0) {
+    console.log("No nodes to paste.");
     return;
   }
+
+  const topLeftNode = copiedNodes.reduce((topLeft, currentNode) => {
+    if (
+      currentNode.y < topLeft.y || 
+      (currentNode.y === topLeft.y && currentNode.x < topLeft.x)
+    ) {
+      return currentNode;
+    }
+    return topLeft;
+  }, copiedNodes[0]);
+
+  console.log(topLeftNode)
+
+  copiedNodes.forEach((copiedNode) => {
+    const relativeX = copiedNode.x - topLeftNode.x;
+    const relativeY = copiedNode.y - topLeftNode.y;
+
+    const newX = menuPosition.left + relativeX - 240; 
+    const newY = menuPosition.top + relativeY - 40;  
+
+    const nodeId = uuid();
+
+    createSVG(nodeId, copiedNode.type, newX, newY);
+
+    d3.select(`#node${nodeId}`).classed("selected", true);
+  });
+
+  console.log("Eingefügte Nodes:", copiedNodes);
+};
+
+export const handleSave = async () => {
+  try {
+    const response = await fetch('/api/SaveJsonFile', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(svgData),
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      console.log(result.message); // Erfolgsmeldung anzeigen
+    } else {
+      console.error('Error saving data:', await response.text());
+    }
+  } catch (error) {
+    console.error('Network error:', error);
+  }
+};
+
+
+export const createSVG = (nodeId, type, x, y) => {
+  const svgContainer = d3.select("#svg-container")
+  console.log("SVG node:", type, "wurde erstellt");
+  const buttonConfig = buttons.find(button => button.name === type);
+    if (!buttonConfig) {
+      console.error(`Button mit dem Typ ${type} wurde nicht gefunden.`);
+      return;
+    }
+
   const { color, connection } = buttonConfig;
 
   const initialNodeElement = {
-    id: nodeIds,
+    id: "node" + nodeId,
     type: type,
+    connections: [],
     x: x,
     y: y 
   }
+
   svgData.push(initialNodeElement)
   console.log(svgData)
   console.log(initialNodeElement)
@@ -34,11 +126,10 @@ export const createSVG = (nodeIds, type, x, y) => {
     .append("g")
     .attr("class", "node")
     .attr("transform", `translate(${x}, ${y})`)
-    .attr("id", nodeId)
+    .attr("id", "node" + nodeId)
     .on("click", (event) => {
       event.stopPropagation();
       nodeElement.classed("selected", true)
-      .select("rect").style('stroke', 'orange').style("stroke-width", "2px");
     })
     .on("dblclick", (event) => {
       document.getElementById('nodeMenu').classList.remove('hidden');
@@ -51,9 +142,7 @@ export const createSVG = (nodeIds, type, x, y) => {
     .attr("rx", 8)
     .attr("ry", 8)
     .attr("fill", color)
-    .style("stroke", "black")
-    .style("stroke-width", "1px")
-    .classed("border", true);
+    .classed("border", true)
 
   const text = nodeElement.append("text")
     .attr("x", 50)
@@ -87,16 +176,7 @@ export const createSVG = (nodeIds, type, x, y) => {
     input_connection.remove()
   }
 
-  // Wenn Rechtsklick gemacht wird
-  // svgContainer.addEventListener("mousedown", function(event) {
-  //   if (event.button === 1) {
-  //     console.log("Mausrad gedrückt");
-  //     event.preventDefault();
-  //   }
-  // });
-
-  function removeSelectionOnClick() {
-    d3.selectAll(".border").style('stroke', 'black').style("stroke-width", "1px");
+  function removeSelectionOnFieldClick() {
     document.getElementById('nodeMenu').classList.add('hidden');
     nodeElement.classed("selected", false)
     d3.selectAll(".node").classed("selected", false)
@@ -123,25 +203,25 @@ export const createSVG = (nodeIds, type, x, y) => {
         // Entferne den ausgewählten Node selbst
         selectedElement.remove();
         document.getElementById('nodeMenu').classList.add('hidden');
-      }
-      
+      } 
     }
   });
 
   let ctrlPressed = false
 
-  document.addEventListener('keydown', function(event) {
-    if (event.key === 'Control' || event.ctrlKey) {
-      ctrlPressed = true;
-      console.log(ctrlPressed)
-    }
-  });
-  document.addEventListener('keyup', function(event) {
-    if (event.key === 'Control' || event.ctrlKey) {
-      ctrlPressed = false;
-      console.log(ctrlPressed)
-    }
-  })
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Control' || event.ctrlKey) {
+    ctrlPressed = true;
+    console.log(ctrlPressed)
+  }
+});
+document.addEventListener('keyup', function(event) {
+  if (event.key === 'Control' || event.ctrlKey) {
+    ctrlPressed = false;
+    console.log(ctrlPressed)
+  }
+})
+
 
   const connectlines = d3.drag()
     .on("start", function (event) {
@@ -170,6 +250,7 @@ export const createSVG = (nodeIds, type, x, y) => {
       const currentConnection = connections[connections.length - 1];
       if (currentConnection) {
         const inputCircles = svgContainer.selectAll(".input-connection");
+        const outputCircles = svgContainer.selectAll(".output-connection");
 
         inputCircles.each(function () {
           let inputCircle = d3.select(this);
@@ -180,13 +261,19 @@ export const createSVG = (nodeIds, type, x, y) => {
           const cy = circlePos.top - svgPos.top + circlePos.height / 2;
           const distance = Math.sqrt(Math.pow(mouseX - cx, 2) + Math.pow(mouseY - cy, 2));
 
-          if (distance < 15) {
+          if (distance < 10) {
             const startCoords = currentConnection.path.attr("d").split("L")[0].substring(1);
             const [startX, startY] = startCoords.split(",").map(Number);
 
             currentConnection.path.attr("d", `M${startX},${startY} L${cx},${cy}`);
             currentConnection.to = inputNode;
             currentConnection.connected = true;
+
+            const outputNode = 
+
+            svgData[0].connections.push(inputNode);
+            console.log(svgData)
+
 
             d3.select(this).attr("fill", "blue");
             console.log('Connected:', currentConnection);
@@ -233,15 +320,9 @@ export const createSVG = (nodeIds, type, x, y) => {
       if (!d3.select(this).classed("selected") && ctrlPressed === false) {
         d3.selectAll(".node.selected")
           .classed("selected", false)
-          .select("rect")
-          .style('stroke', 'black')
-          .style("stroke-width", "1px");
 
         d3.select(this)
           .classed("selected", true)
-          .select("rect")
-          .style('stroke', 'orange')
-          .style("stroke-width", "2px");
       }
     })
     .on("drag", function (event) {
@@ -317,7 +398,18 @@ export const createSVG = (nodeIds, type, x, y) => {
         }
       });
       console.log(`x-Achse: ${x} mauspos: ${mouseX} nodebereich: ${offsetX} nodeX: ${ d3.select(this).attr("transform")}`);
-      
+      console.log(svgData)
+      console.log(this.id)
+
+      let index = svgData.findIndex(node => node.id === this.id);
+
+      if(index !== -1) {
+        svgData[index].x = x
+        svgData[index].y = y
+        
+      } else {
+        console.log("die Ids stimmen nicht übereinander")
+      }
     });
 
   nodeElement.call(drag);
@@ -337,7 +429,7 @@ export const createSVG = (nodeIds, type, x, y) => {
       event.subject.selectionRectangular = selectRectangular;
       event.subject.startX = startX;
       event.subject.startY = startY;
-      removeSelectionOnClick()
+      removeSelectionOnFieldClick()
     })
     .on("drag", function (event) {
       const [mouseX, mouseY] = d3.pointer(event, svgContainer.node());
@@ -371,7 +463,6 @@ export const createSVG = (nodeIds, type, x, y) => {
 
       const currentConnection = connections[connections.length - 1];
 
-
       nodeFlow.each(function () {
         const node = d3.select(this);
 
@@ -388,27 +479,16 @@ export const createSVG = (nodeIds, type, x, y) => {
           nodeY < newY + newHeight && nodeY + nodeHeight > newY
         ) {
           node.classed("selected", true)
-          node.selectChild(".border").style('stroke', 'orange').style("stroke-width", "2px")
           node.selectChild(".line").classed("selectedline", true)
 
         }
       });
-
-      // const groupElement = d3.select('#svg-container')
-      //   .append('g')
-      //   .classed("group", true)
-
-      // const nodeGroup = d3.selectAll(".selected")
-
-      // nodeGroup.each(function () {
-      //   groupElement.node().appendChild(this);
-      // })
-
       d3.selectAll(".selectrect").remove();
     })
   svgContainer.call(selectAndEdit)
 
 };
+
 
 
 export const clearAllNodes = () => {

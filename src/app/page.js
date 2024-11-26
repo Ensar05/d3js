@@ -5,6 +5,9 @@ import * as svgNodes from './svgNodes';
 import { categories, buttons } from './flowData';
 import Settings from '@/components/settings';
 import Menu from '@/components/menu'
+import { uuid } from 'uuidv4';
+import copyPaste from './svgNodes'
+import * as test from './svgNodes'
 
 let nodesjsonfile = null
 
@@ -18,52 +21,22 @@ export default function Home() {
   const [isExportMenuVisible, setIsExportMenuVisible] = useState(false)
   const [isImportMenuVisible, setIsImportMenuVisible] = useState(false)
   const [isSettingsVisible, setIsSettingsVisible] = useState(false)
+  const [isNotificationVisible, setIsNotificationVisible] = useState(false)
   const [blurredBackground, setBlurredBackground] = useState(false)
-  const [isDragging, setIsDragging] = useState(false);
-  const [startPosition, setStartPosition] = useState({ x: 0, y: 0 });
-  const [translate, setTranslate] = useState({ x: 0, y: 0 });
   const [inputJsonText, setInputJsonText] = useState("")
   const [error, setError] = useState("")
   const canvasRef = useRef(null);
   const fieldRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startPosition, setStartPosition] = useState({ x: 0, y: 0 });
+  const [scrollStart, setScrollStart] = useState({ left: 0, top: 0 });
 
   const gridSize = 20;
-
   useEffect(() => {
-    const drawGrid = () => {
-      const svg = d3.select(fieldRef.current);
-      svg.selectAll("*").remove();  // Clear existing grid
-      
-      const width = svg.node().clientWidth;
-      const height = svg.node().clientHeight;
-
-      const gridColor = darkMode ? '#333' : '#ddd';
-
-      // Draw vertical lines
-      for (let x = 0; x < width; x += gridSize) {
-        svg.append("line")
-          .attr("x1", x)
-          .attr("y1", 0)
-          .attr("x2", x)
-          .attr("y2", height)
-          .attr("stroke", gridColor)
-          .attr("stroke-width", 1);
-      }
-
-      // Draw horizontal lines
-      for (let y = 0; y < height; y += gridSize) {
-        svg.append("line")
-          .attr("x1", 0)
-          .attr("y1", y)
-          .attr("x2", width)
-          .attr("y2", y)
-          .attr("stroke", gridColor)
-          .attr("stroke-width", 1);
-      }
-
       const NodeCreate = d3.selectAll(".Button");
 
       const dragCreate = d3.drag()
+
         .on("start", function (event) {
           const clonedNode = this.cloneNode(true);
           clonedNode.className = this.className;
@@ -81,21 +54,21 @@ export default function Home() {
             .attr("transform", `translate(${event.x}, ${event.y})`);
         })
         .on("end", function (event) {
+          const deltaY = event.y - startPosition.y;
           const clonedNode = this.cloneNode(true);
           this.clonedButton.remove();
           const value = clonedNode.value;
           const bgColor = clonedNode.bgColor;
           if (event.x > 256) {
-            svgNodes.createSVG(svgNodes.nodeId, value, event.x - 306, event.y) //x und y koordinaten noch zu fixen! wenn runter gescrollt wird, sollten sie angepasst werden!
+            svgNodes.createSVG(uuid(), value, event.x - 256, deltaY) //x und y koordinaten noch zu fixen! wenn runter gescrollt wird, sollten sie angepasst werden!
           }
         });
       dragCreate(NodeCreate);
 
-    };
     d3.json('nodes.json').then(data => {
       data.nodes.forEach(node => {
         svgNodes.createSVG(
-          svgNodes.nodeId,
+          node.id,
           node.type,
           node.x,
           node.y
@@ -105,20 +78,58 @@ export default function Home() {
       console.error("Fehler beim Laden der JSON-Datei:", error);
     });
     //kopieren bei customMenu geht dann wieder aber es gibt fehler beim neuladen toggleExportMenu();
-
     drawGrid();
-    window.addEventListener('resize', drawGrid);
-
-    return () => {
-      window.removeEventListener('resize', drawGrid);
-    };
 
   }, [darkMode]);
+
+  const fetchData = async () => {
+    try {
+      const response = await fetch('/api/SaveJsonFile'); 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      console.log(data); 
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+
+  const drawGrid = () => {
+    const svg = d3.select(fieldRef.current);
+
+    const width = svg.node().clientWidth;
+    const height = svg.node().clientHeight;
+
+    const gridColor = darkMode ? '#333' : '#ddd';
+
+    for (let x = 0; x < width; x += gridSize) {
+      svg.append("line")
+        .attr("x1", x)
+        .attr("y1", 0)
+        .attr("x2", x)
+        .attr("y2", height)
+        .attr("stroke", gridColor)
+        .attr("stroke-width", 1)
+        .attr("class", "z-10");
+    }
+
+    for (let y = 0; y < height; y += gridSize) {
+      svg.append("line")
+        .attr("x1", 0)
+        .attr("y1", y)
+        .attr("x2", width)
+        .attr("y2", y)
+        .attr("stroke", gridColor)
+        .attr("stroke-width", 1)
+        .attr("class", "z-10");
+    }
+  };
 
   const changeBackground = () => {
     setBlurredBackground(!blurredBackground)
   }
-  
+
   const toggleDarkmode = () => {
     setDarkMode(!darkMode);
     document.documentElement.classList.toggle('dark', !darkMode);
@@ -154,9 +165,11 @@ export default function Home() {
     event.preventDefault();
     setMenuPosition({
       top: event.pageY,
-      left: event.pageX - 240,
+      left: event.pageX,
     });
+    console.log(menuPosition.left, menuPosition.top)
     setIsCustomMenuVisible(true);
+
   };
 
   const toggleExportMenu = () => {
@@ -194,13 +207,13 @@ export default function Home() {
     alert("Die Json File wurde in die Zwischenablage kopiert!")
   }
 
-  //wenn ImportButton geklickt wird 
+  //wenn ImportButton geklickt wird
   const ImportJson = () => {
     const jsonData = JSON.parse(inputJsonText);
 
     if (jsonData.nodes) {
       jsonData.nodes.forEach(js => {
-        svgNodes.createSVG(svgNodes.nodeId, js.type, js.x, js.y);
+        svgNodes.createSVG(js.id, js.type, js.x, js.y);
       })
     } else {
       setError("Fail")
@@ -229,45 +242,49 @@ export default function Home() {
     }
   }
 
-  const handleMouseDown = (event) => {
-    if (event.button === 1) {
-      event.preventDefault();
-      setIsDragging(true)
-      setStartPosition({ x: event.clientX - translate.x, y: event.clientY - translate.y });
-      console.log("geklickt")
+  const handleMouseDown = (e) => {
+    // Prüfen, ob die mittlere Maustaste gedrückt wurde
+    if (e.button === 1) {
+      e.preventDefault();
+      setIsDragging(true);
+      setStartPosition({ x: e.clientX, y: e.clientY }); // Speichert die Startposition des Mauszeigers
+      if (canvasRef.current) {
+        // Speichert die Start-Scrollposition des Containers
+        setScrollStart({
+          left: canvasRef.current.scrollLeft,
+          top: canvasRef.current.scrollTop,
+        });
+      }
     }
-  }
+  };
 
-  const handleMouseUp = (event) => {
-    if (event.button === 1) {
-      console.log("losgelassen")
-      setIsDragging(false)
+  const handleMouseMove = (e) => {
+    if (isDragging && canvasRef.current) {
+      // Berechnet die Verschiebung
+      const deltaX = e.clientX - startPosition.x;
+      const deltaY = e.clientY - startPosition.y;
+
+      // Aktualisiert die Scroll-Position des Containers <--- WICHTIG .current und .scrollTop / .scrollRight
+      canvasRef.current.scrollLeft = scrollStart.left - deltaX;
+      canvasRef.current.scrollTop = scrollStart.top - deltaY;
     }
-  }
+  };
 
-  const handleMouseMove = (event) => {
-    if (isDragging) {
-      const dx = event.clientX - startPosition.x;
-      const dy = event.clientY - startPosition.y;
-      setTranslate({ x: dx, y: dy });
-    }
-  }
+  const handleMouseUp = () => {
+    setIsDragging(false); // Beendet das Dragging, wenn die Maustaste losgelassen wird
+  };
 
-  // document.addEventListener('keydown', (e) => {
-  //  if (e.key === 'Escape') {
-  //   e.preventDefault
-  //  } 
-  // })
 
-  // style={{ transform: `translate(${translate.x}px, ${translate.y}px)` }}           ref={fieldRef}
-  //         onMouseDown={handleMouseDown}
-  //         onMouseMove={handleMouseMove}
-  //         onMouseUp={handleMouseUp}
-
+var testing = false;
 
   return (
     <main id="FlowEditor" className="flex flex-row">
       <div className={`${blurredBackground ? "fixed z-40 opacity-40 bg-gray-500 h-screen w-full" : "hidden"}`}></div>
+      {isNotificationVisible && (
+          <div className='flex fixed left-0 top-0'>
+            <div>Test</div>
+          </div>
+        )}
       <div id="mainContent" className="flex flex-row flex-grow text-sm">
         <div id="menuDiv" className="h-full flex flex-row items-start z-30 min-w-60 select-none">
           <div className="flex flex-col fixed h-full w-60 p-2 color border-r-2 border-gray-400 dark:bg-zinc-900 dark:text-white dark:border-zinc-800">
@@ -291,7 +308,7 @@ export default function Home() {
                         <button
                           key={button.name}
                           value={button.name}
-                          onClick={() => svgNodes.createSVG(svgNodes.nodeId, `${button.name}`, 0, 0)}
+                          onClick={() => svgNodes.createSVG(uuid(), `${button.name}`, 0, 0)}
                           className={`Button block ${button.bgColor} text-white px-4 py-2 rounded mb-2`}
                         >
                           {button.name}
@@ -311,10 +328,10 @@ export default function Home() {
             <img id="test" className='opacity-0 transition-opacity duration-300 select-none' src='././icons/bin.png' alt="Bin" />
           </div>
         </div>
-        <div id="fieldSide" className="flex flex-col flex-1 select-none overflow-hidden dark:bg-zinc-900">
+        <div id="fieldSide" className="flex flex-col flex-1 select-none dark:bg-zinc-900">
           <div id="FlowSelektor" className='flex w-full z-30 color'>
             <div className='flex fixed h-10 justify-between w-full color border-b-2 border-gray-400'>
-              <div className='flex fixed items-center color '>
+              <div className='flex fixed items-center color'>
                 <div className='ml-3 p-2 pr-16 border-x-2 border-t-2 border-gray-400 cursor-pointer'>
                   Flow 1
                 </div>
@@ -326,6 +343,7 @@ export default function Home() {
                 </div>
               </div>
               <div className='flex fixed right-0 h-10 items-center color pr-2 border-b-2 border-gray-400 cursor-pointer'>
+                <button className={`${testing? "bg-gray-400 p-1 border-gray-600 border text-white mr-6" : "bg-blue-500 hover:bg-blue-600 p-1 border-gray-600 border text-white mr-6" }`} onClick={test.handleSave}>Änderungen Speichern</button>
                 <img src='././icons/menu.png' className='z-50' onClick={() => { setMenu(!menu) }} />
                 <Menu
                   menu={menu}
@@ -372,30 +390,32 @@ export default function Home() {
             setIsSettingsVisible={setIsSettingsVisible}
             setBlurredBackground={setBlurredBackground}
           />
-            <div id="field" className="absolute left-60 top-0 right-0 bottom-0 mt-10 overflow-auto">
-              <svg
-                ref={fieldRef}
-                id="svg-container"
-                onContextMenu={handleContextMenu}
-                onMouseDown={handleMouseDown}b
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                width="4000px"
-                height="4000px"
-                style={{ transform: `translate(${translate.x}px, ${translate.y}px)` }}
-              >
-              </svg>
-            </div>
+          <div id="field" className="absolute left-60 top-0 right-0 bottom-0 mt-10 overflow-auto"
+            ref={canvasRef}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp} >
+            <svg
+              ref={fieldRef}
+              id="svg-container"
+              onContextMenu={handleContextMenu}
+              width="4000px"
+              height="4000px"
+              className='z-10'
+            >
+            </svg>
+          </div>
           <button className="absolute h-fit bottom-10 left-0 z-50 text-white px-4 py-2" onClick={svgNodes.clearAllNodes}>
             <img src="././icons/edit.png" alt="Edit" />
           </button>
           {isCustomMenuVisible && (
             <div style={{ top: menuPosition.top, left: menuPosition.left }} className="absolute bg-white border color border-gray-400 shadow-md py-1 rounded w-48 left-0">
               <ul>
-                <li className="p-2 hover:bg-gray-300 cursor-pointer">Einfügen</li>
-                <li className="p-2 hover:bg-gray-300 cursor-pointer" onClick={copyJsonString}>Kopieren</li>
+                <li className="p-2 hover:bg-gray-300 cursor-pointer" onClick={() => {svgNodes.copyPaste({menuPosition}), setIsCustomMenuVisible(!isCustomMenuVisible)}}>Einfügen</li>
+                <li className="p-2 hover:bg-gray-300 cursor-pointer" onClick={() => {svgNodes.CopyNode(), setIsCustomMenuVisible(!isCustomMenuVisible), setIsNotificationVisible(!isNotificationVisible)}}>Kopieren</li>
                 <li className="p-2 hover:bg-gray-300 cursor-pointer" onClick={() => { setIsExportMenuVisible(!isExportMenuVisible), setIsCustomMenuVisible(!isCustomMenuVisible), toggleExportMenu() }}>Export</li>
-                <li className="p-2 hover:bg-gray-300 cursor-pointer">Alles Auswählen</li>
+                <li className="p-2 hover:bg-gray-300 cursor-pointer" onClick={() => {svgNodes.selectAllNodes(), setIsCustomMenuVisible(!isCustomMenuVisible)}}>Alles Auswählen</li>
+                <li className="p-2 hover:bg-gray-300 cursor-pointer" onClick={() => {svgNodes.selectAllNodes(), setIsCustomMenuVisible(!isCustomMenuVisible)}}>Löschen</li>
               </ul>
             </div>
           )}

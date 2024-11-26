@@ -1,30 +1,37 @@
-{
-    "nodes": [
-        {
-            "id": 1,
-            "type": "Start",
-            "name": "Start",
-            "connections": [],
-            "x": 0,
-            "y": 0
-        },
-        {
-            "id": 2,
-            "type": "Function",
-            "name": "Funktion",
-            "connections": [],
-            "x": 100,
-            "y": 50
-        },
-        {
-            "id": 3,
-            "type": "Switch",
-            "name": "Switch",
-            "connections": [],
-            "x": 140,
-            "y": 120
-        }
-        
-    ]
-
-}
+[
+  {
+    "id": "nodece1ec2ad-89ce-48f9-82da-92132e065ebe",
+    "type": "Start",
+    "connections": [],
+    "x": 332.00001525878906,
+    "y": 518
+  },
+  {
+    "id": "node65f407f0-7c0a-4e0a-9949-026d2884f3d0",
+    "type": "Start",
+    "connections": [],
+    "x": 130,
+    "y": 151
+  },
+  {
+    "id": "node5d0926d5-a206-45d7-8d82-1a0cdee8741a",
+    "type": "Start",
+    "connections": [],
+    "x": 209.00001525878906,
+    "y": 305
+  },
+  {
+    "id": "node206da40a-68ae-4bc4-b09a-1e0b4badffc6",
+    "type": "Start",
+    "connections": [],
+    "x": 477.99998474121094,
+    "y": 867
+  },
+  {
+    "id": "node7ef78b8a-c8ae-460b-b938-f1750bfdc1d0",
+    "type": "Function",
+    "connections": [],
+    "x": 207.00231504440308,
+    "y": 611.0509338378906
+  }
+]

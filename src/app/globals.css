@@ -35,8 +35,13 @@ h2 {
  background-color: #ECECEC;
 }
 
-.wh4000 {
-  height: 4000px;
-  width: 4000px;
+rect {
+  stroke: black;
+  stroke-width: 1px;
+}
+
+.selected > rect {
+  stroke: orange;
+  stroke-width: 2px;
 }
 

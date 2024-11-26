@@ -1,0 +1,23 @@
+[
+  {
+    "id": "node65b29306-134d-4fa4-a9de-d4122a52051d",
+    "type": "Start",
+    "connections": [],
+    "x": 0,
+    "y": 0
+  },
+  {
+    "id": "nodeb916e6d3-67f3-41d8-ab3b-38c60a8041ae",
+    "type": "Function",
+    "connections": [],
+    "x": 100,
+    "y": 50
+  },
+  {
+    "id": "node4cd31da5-b993-49e6-b5d5-46b1c9231bed",
+    "type": "Switch",
+    "connections": [],
+    "x": 369.00001525878906,
+    "y": 723
+  }
+]
